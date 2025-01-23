@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 
+import 'screen_tracker.dart';
+
 // User Data Model
 class UserData {
   final String userId;
@@ -133,10 +135,13 @@ class QubeAnalyticsSDK {
 
   late String sessionId;
   late UserData userData;
+  late ScreenTracker screenTracker;
 
   Future<void> initialize(String userId) async {
     sessionId = _generateUniqueId();
     userData = await _collectDeviceData(userId);
+    screenTracker = ScreenTracker(analytics: this);
+
     print("SDK Initialized: ${jsonEncode(userData)}");
 
     // Set error tracking

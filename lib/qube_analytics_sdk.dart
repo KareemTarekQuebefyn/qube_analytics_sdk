@@ -187,14 +187,14 @@ class QubeAnalyticsSDK {
   }
 
   void trackScreenView(ScreenViewData data) {
-    print("Screen View: ${jsonEncode(data.toJson())}");
+    print("pppppppppppppppppppppp Screen View: ${jsonEncode(data.toJson())}");
   }
 
   void trackError(ErrorData data) {
-    print("Error: ${jsonEncode(data.toJson())}");
+    print("pppppppppppppppppp Error: ${jsonEncode(data.toJson())}");
   }
 
   void trackBehavior(BehaviorData data) {
-    print("Behavior: ${jsonEncode(data.toJson())}");
+    print("pppppppppppppppppppppppp Behavior: ${jsonEncode(data.toJson())}");
   }
 }

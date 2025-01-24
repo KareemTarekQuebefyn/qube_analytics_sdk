@@ -210,7 +210,7 @@ class QubeNavigatorObserver extends NavigatorObserver {
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
 
-    final screenName = route.settings.name ?? route.runtimeType.toString();
+    final screenName = route.settings.name ?? _getScreenName(route);
     final sdk = QubeAnalyticsSDK();
 
     sdk.trackScreenView(ScreenViewData(
@@ -220,5 +220,12 @@ class QubeNavigatorObserver extends NavigatorObserver {
       visitDateTime: DateTime.now(),
       sessionId: sdk.sessionId,
     ));
+  }
+
+  String _getScreenName(Route<dynamic> route) {
+    if (route is ModalRoute) {
+      return route.settings.name ?? route.runtimeType.toString();
+    }
+    return route.runtimeType.toString(); // اسم الكلاس بتاع الـ Route
   }
 }

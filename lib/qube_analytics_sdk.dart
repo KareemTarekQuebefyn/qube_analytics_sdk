@@ -7,8 +7,6 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 
-import 'screen_tracker.dart';
-
 // User Data Model
 class UserData {
   final String userId;
@@ -135,13 +133,10 @@ class QubeAnalyticsSDK {
 
   late String sessionId;
   late UserData userData;
-  late ScreenTracker screenTracker;
 
   Future<void> initialize(String userId) async {
     sessionId = _generateUniqueId();
     userData = await _collectDeviceData(userId);
-    screenTracker = ScreenTracker(analytics: this);
-
     print("SDK Initialized: ${jsonEncode(userData)}");
 
     // Set error tracking
@@ -201,5 +196,23 @@ class QubeAnalyticsSDK {
 
   void trackBehavior(BehaviorData data) {
     print("pppppppppppppppppppppppp Behavior: ${jsonEncode(data.toJson())}");
+  }
+}
+
+// Navigator Observer for automatic screen tracking
+class QubeNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+
+    final screenName = route.settings.name ?? "Unknown Screen";
+    final sdk = QubeAnalyticsSDK();
+    sdk.trackScreenView(ScreenViewData(
+      screenId: sdk._generateUniqueId(),
+      screenPath: screenName,
+      screenName: screenName,
+      visitDateTime: DateTime.now(),
+      sessionId: sdk.sessionId,
+    ));
   }
 }

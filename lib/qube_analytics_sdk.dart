@@ -197,6 +197,11 @@ class QubeAnalyticsSDK {
   void trackBehavior(BehaviorData data) {
     print("pppppppppppppppppppppppp Behavior: ${jsonEncode(data.toJson())}");
   }
+
+  String _getScreenNameFromContext(BuildContext context) {
+    final route = ModalRoute.of(context);
+    return route?.settings.name ?? context.widget.runtimeType.toString();
+  }
 }
 
 // Navigator Observer for automatic screen tracking
@@ -205,10 +210,11 @@ class QubeNavigatorObserver extends NavigatorObserver {
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
 
-    final screenName = route.settings.name ?? "Unknown Screen";
+    final screenName = route.settings.name ?? route.runtimeType.toString();
     final sdk = QubeAnalyticsSDK();
+
     sdk.trackScreenView(ScreenViewData(
-      screenId: sdk._generateUniqueId(),
+      screenId: screenName.hashCode.toString(), // Screen ID ثابت
       screenPath: screenName,
       screenName: screenName,
       visitDateTime: DateTime.now(),

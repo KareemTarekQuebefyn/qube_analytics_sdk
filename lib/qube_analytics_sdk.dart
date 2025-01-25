@@ -109,8 +109,7 @@ class QubeAnalyticsSDK {
   Future<void> initialize({String? userId}) async {
     sessionId = _generateUniqueId();
     deviceId = await _initializeDeviceId();
-    final generatedUserId =
-        userId ?? _generateUniqueId(); // توليد User ID إذا لم يتم تمريره
+    final generatedUserId = userId ?? _generateUniqueId();
     userData = await _collectDeviceData(generatedUserId);
     print("SDK Initialized: ${jsonEncode(userData)}");
 
@@ -160,16 +159,14 @@ class QubeAnalyticsSDK {
 
   Future<String> _getIPAddress() async {
     try {
-      final interfaces = await NetworkInterface.list();
-      for (var interface in interfaces) {
-        for (var addr in interface.addresses) {
-          if (addr.type == InternetAddressType.IPv4) {
-            return addr.address;
-          }
-        }
+      const url = "https://api64.ipify.org?format=json";
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['ip']; // إرجاع الـ IP العام
       }
     } catch (e) {
-      print("Error fetching IP Address: $e");
+      print("Error fetching Public IP: $e");
     }
     return "Unknown";
   }
@@ -179,7 +176,7 @@ class QubeAnalyticsSDK {
       final url = "https://ipapi.co/$ipAddress/country_name/";
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        return response.body.trim();
+        return response.body.trim(); // إرجاع اسم البلد
       }
     } catch (e) {
       print("Error fetching country: $e");
@@ -192,19 +189,19 @@ class QubeAnalyticsSDK {
     String deviceType = "";
     int ram = 0;
     int cpuCores = 0;
-    final ipAddress = await _getIPAddress();
-    final country = await _getCountry(ipAddress);
+    final ipAddress = await _getIPAddress(); // الحصول على IP العام
+    final country = await _getCountry(ipAddress); // تحديد البلد
 
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
       deviceType = "Android";
-      ram = androidInfo.systemFeatures.length;
-      cpuCores = androidInfo.supported64BitAbis.length;
+      ram = androidInfo.systemFeatures.length; // تحسين الدقة لاحقًا
+      cpuCores = androidInfo.supported64BitAbis.length; // تحسين الدقة لاحقًا
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       deviceType = "iOS";
-      ram = 2;
-      cpuCores = 4;
+      ram = 2; // تحسين لاحقًا
+      cpuCores = 4; // تحسين لاحقًا
     }
 
     return UserData(

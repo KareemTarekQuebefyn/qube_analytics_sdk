@@ -173,7 +173,8 @@ class QubeAnalyticsSDK {
 
   Future<String> _getCountry(String ipAddress) async {
     try {
-      final url = "https://ipapi.co/$ipAddress/country_name/";
+      const apiKey = "df508899a9aa3c8b27e8cbedcb2dffb4"; // مفتاح API الخاص بك
+      final url = "https://ipapi.co/$ipAddress/country_name/?key=$apiKey";
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         return response.body.trim(); // إرجاع اسم البلد
@@ -195,13 +196,13 @@ class QubeAnalyticsSDK {
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
       deviceType = "Android";
-      ram = androidInfo.systemFeatures.length; // تحسين الدقة لاحقًا
-      cpuCores = androidInfo.supported64BitAbis.length; // تحسين الدقة لاحقًا
+      ram = androidInfo.systemFeatures.length;
+      cpuCores = androidInfo.supported64BitAbis.length;
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       deviceType = "iOS";
-      ram = 2; // تحسين لاحقًا
-      cpuCores = 4; // تحسين لاحقًا
+      ram = 2;
+      cpuCores = 4;
     }
 
     return UserData(

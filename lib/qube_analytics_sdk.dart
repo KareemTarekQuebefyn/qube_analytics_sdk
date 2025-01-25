@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 
 // User Data Model
 class UserData {
@@ -64,40 +65,6 @@ class ScreenViewData {
       };
 }
 
-// Behavior Data Model
-class BehaviorData {
-  final String actionType;
-  final double x;
-  final double y;
-  final double screenY;
-  final DateTime actionDateTime;
-  final String sessionId;
-  final String userId;
-  final String screenId;
-
-  BehaviorData({
-    required this.actionType,
-    required this.x,
-    required this.y,
-    required this.screenY,
-    required this.actionDateTime,
-    required this.sessionId,
-    required this.userId,
-    required this.screenId,
-  });
-
-  Map<String, dynamic> toJson() => {
-        'actionType': actionType,
-        'x': x,
-        'y': y,
-        'screenY': screenY,
-        'actionDateTime': actionDateTime.toIso8601String(),
-        'sessionId': sessionId,
-        'userId': userId,
-        'screenId': screenId,
-      };
-}
-
 // Error Data Model
 class ErrorData {
   final String sessionId;
@@ -139,10 +106,12 @@ class QubeAnalyticsSDK {
   late UserData userData;
   late String deviceId;
 
-  Future<void> initialize(String userId) async {
+  Future<void> initialize({String? userId}) async {
     sessionId = _generateUniqueId();
     deviceId = await _initializeDeviceId();
-    userData = await _collectDeviceData(userId);
+    final generatedUserId =
+        userId ?? _generateUniqueId(); // توليد User ID إذا لم يتم تمريره
+    userData = await _collectDeviceData(generatedUserId);
     print("SDK Initialized: ${jsonEncode(userData)}");
 
     // Set error tracking
@@ -189,11 +158,42 @@ class QubeAnalyticsSDK {
     return deviceIdentifier.hashCode.toString();
   }
 
+  Future<String> _getIPAddress() async {
+    try {
+      final interfaces = await NetworkInterface.list();
+      for (var interface in interfaces) {
+        for (var addr in interface.addresses) {
+          if (addr.type == InternetAddressType.IPv4) {
+            return addr.address;
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching IP Address: $e");
+    }
+    return "Unknown";
+  }
+
+  Future<String> _getCountry(String ipAddress) async {
+    try {
+      final url = "https://ipapi.co/$ipAddress/country_name/";
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return response.body.trim();
+      }
+    } catch (e) {
+      print("Error fetching country: $e");
+    }
+    return "Unknown";
+  }
+
   Future<UserData> _collectDeviceData(String userId) async {
     final deviceInfo = DeviceInfoPlugin();
     String deviceType = "";
     int ram = 0;
     int cpuCores = 0;
+    final ipAddress = await _getIPAddress();
+    final country = await _getCountry(ipAddress);
 
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
@@ -213,8 +213,8 @@ class QubeAnalyticsSDK {
       deviceType: deviceType,
       ram: ram,
       cpuCores: cpuCores,
-      ip: "127.0.0.1",
-      country: "Unknown",
+      ip: ipAddress,
+      country: country,
     );
   }
 
@@ -224,10 +224,6 @@ class QubeAnalyticsSDK {
 
   void trackError(ErrorData data) {
     print("Error: ${jsonEncode(data.toJson())}");
-  }
-
-  void trackBehavior(BehaviorData data) {
-    print("Behavior: ${jsonEncode(data.toJson())}");
   }
 }
 

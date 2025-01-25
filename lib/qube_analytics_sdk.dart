@@ -174,10 +174,15 @@ class QubeAnalyticsSDK {
   Future<String> _getCountry(String ipAddress) async {
     try {
       const apiKey = "df508899a9aa3c8b27e8cbedcb2dffb4"; // مفتاح API الخاص بك
-      final url = "https://ipapi.co/$ipAddress/country_name/?key=$apiKey";
+      final url =
+          "http://api.ipapi.com/$ipAddress?access_key=$apiKey&fields=country_name&output=json";
       final response = await http.get(Uri.parse(url));
+
       if (response.statusCode == 200) {
-        return response.body.trim(); // إرجاع اسم البلد
+        final data = jsonDecode(response.body);
+        return data['country_name'] ?? "Unknown"; // إرجاع اسم البلد
+      } else {
+        print("Failed to fetch country: ${response.body}");
       }
     } catch (e) {
       print("Error fetching country: $e");

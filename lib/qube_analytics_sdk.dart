@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // User Data Model
 class UserData {
@@ -131,11 +132,16 @@ class QubeAnalyticsSDK {
   factory QubeAnalyticsSDK() => _instance;
   QubeAnalyticsSDK._internal();
 
+  static const _deviceIdKey = "device_id";
+  static const _storage = FlutterSecureStorage();
+
   late String sessionId;
   late UserData userData;
+  late String deviceId;
 
   Future<void> initialize(String userId) async {
     sessionId = _generateUniqueId();
+    deviceId = await _initializeDeviceId();
     userData = await _collectDeviceData(userId);
     print("SDK Initialized: ${jsonEncode(userData)}");
 
@@ -154,25 +160,51 @@ class QubeAnalyticsSDK {
   String _generateUniqueId() =>
       DateTime.now().millisecondsSinceEpoch.toString();
 
+  Future<String> _initializeDeviceId() async {
+    String? storedDeviceId = await _storage.read(key: _deviceIdKey);
+
+    if (storedDeviceId != null) {
+      return storedDeviceId;
+    }
+
+    final newDeviceId = await _generateDeviceId();
+    await _storage.write(key: _deviceIdKey, value: newDeviceId);
+    return newDeviceId;
+  }
+
+  Future<String> _generateDeviceId() async {
+    final deviceInfo = DeviceInfoPlugin();
+    String deviceIdentifier = "";
+
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      deviceIdentifier =
+          "${androidInfo.id}-${androidInfo.model}-${androidInfo.product}";
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      deviceIdentifier =
+          "${iosInfo.identifierForVendor}-${iosInfo.utsname.machine}-${iosInfo.systemName}";
+    }
+
+    return deviceIdentifier.hashCode.toString();
+  }
+
   Future<UserData> _collectDeviceData(String userId) async {
     final deviceInfo = DeviceInfoPlugin();
     String deviceType = "";
-    String deviceId = "";
     int ram = 0;
     int cpuCores = 0;
 
     if (Platform.isAndroid) {
       final androidInfo = await deviceInfo.androidInfo;
       deviceType = "Android";
-      deviceId = androidInfo.id;
-      ram = androidInfo.systemFeatures.length; // Example data
-      cpuCores = androidInfo.supported64BitAbis.length; // Example data
+      ram = androidInfo.systemFeatures.length;
+      cpuCores = androidInfo.supported64BitAbis.length;
     } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       deviceType = "iOS";
-      deviceId = iosInfo.identifierForVendor!;
-      ram = 2; // Example data
-      cpuCores = 4; // Example data
+      ram = 2;
+      cpuCores = 4;
     }
 
     return UserData(
@@ -187,20 +219,15 @@ class QubeAnalyticsSDK {
   }
 
   void trackScreenView(ScreenViewData data) {
-    print("pppppppppppppppppppppp Screen View: ${jsonEncode(data.toJson())}");
+    print("Screen View: ${jsonEncode(data.toJson())}");
   }
 
   void trackError(ErrorData data) {
-    print("pppppppppppppppppp Error: ${jsonEncode(data.toJson())}");
+    print("Error: ${jsonEncode(data.toJson())}");
   }
 
   void trackBehavior(BehaviorData data) {
-    print("pppppppppppppppppppppppp Behavior: ${jsonEncode(data.toJson())}");
-  }
-
-  String _getScreenNameFromContext(BuildContext context) {
-    final route = ModalRoute.of(context);
-    return route?.settings.name ?? context.widget.runtimeType.toString();
+    print("Behavior: ${jsonEncode(data.toJson())}");
   }
 }
 
@@ -214,7 +241,7 @@ class QubeNavigatorObserver extends NavigatorObserver {
     final sdk = QubeAnalyticsSDK();
 
     sdk.trackScreenView(ScreenViewData(
-      screenId: screenName.hashCode.toString(), // Screen ID ثابت
+      screenId: screenName.hashCode.toString(),
       screenPath: screenName,
       screenName: screenName,
       visitDateTime: DateTime.now(),
@@ -226,6 +253,6 @@ class QubeNavigatorObserver extends NavigatorObserver {
     if (route is ModalRoute) {
       return route.settings.name ?? route.runtimeType.toString();
     }
-    return route.runtimeType.toString(); // اسم الكلاس بتاع الـ Route
+    return route.runtimeType.toString();
   }
 }
